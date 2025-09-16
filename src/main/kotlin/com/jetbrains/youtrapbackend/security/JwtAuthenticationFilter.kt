@@ -23,10 +23,15 @@ class JwtAuthenticationFilter(
         val jwt = getJwtFromRequest(request)
 
         if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
-            val email = jwtTokenProvider.getEmailFromToken(jwt)
+            val claims = jwtTokenProvider.getAllClaimsFromToken(jwt)
+            val email = claims.subject
+            val name = claims.get("name", String::class.java)
+            val picture = claims.get("picture", String::class.java)
 
+            val userPrincipal = UserPrincipal(email, name, picture)
             val authorities = listOf(SimpleGrantedAuthority("ROLE_USER"))
-            val authentication = UsernamePasswordAuthenticationToken(email, null, authorities)
+
+            val authentication = UsernamePasswordAuthenticationToken(userPrincipal, null, authorities)
 
             authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
             SecurityContextHolder.getContext().authentication = authentication

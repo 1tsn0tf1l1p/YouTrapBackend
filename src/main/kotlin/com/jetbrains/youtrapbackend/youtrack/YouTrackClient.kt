@@ -5,7 +5,6 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestTemplate
@@ -18,6 +17,16 @@ class YouTrackClient(
 ) {
     private val restTemplate: RestTemplate = RestTemplate()
 
+    data class LinkedIssue(val idReadable: String)
+
+    data class LinkType(val name: String)
+
+    data class IssueLink(
+        val direction: String,
+        val linkType: LinkType,
+        val issues: List<LinkedIssue>
+    )
+
     data class IssueSummary(
         val idReadable: String?,
         val summary: String?,
@@ -25,22 +34,21 @@ class YouTrackClient(
         val created: Long?,
         val updated: Long?,
         val url: String?,
+        val links: List<IssueLink>?
     ) {
         data class Project(val name: String?)
     }
 
-    fun getAllIssues(): List<IssueSummary> {
+    fun getIssueDetails(issueId: String): IssueSummary? {
         require(baseUrl.isNotBlank() && apiToken.isNotBlank()) {
-            "YouTrack base URL and API token must be configured in your environment variables."
+            "YouTrack base URL and API token must be configured."
         }
 
-        val fields = "idReadable,summary,project(name),created,updated"
-
-        val query = "project: ADM"
+        val fields = "idReadable,summary,project(name),created,updated," +
+                "links(direction,linkType(name),issues(idReadable))"
 
         val uri = UriComponentsBuilder
-            .fromHttpUrl(baseUrl.removeSuffix("/") + "/api/issues")
-            .queryParam("query", query)
+            .fromHttpUrl("$baseUrl/api/issues/$issueId")
             .queryParam("fields", fields)
             .build()
             .toUri()
@@ -53,22 +61,16 @@ class YouTrackClient(
         val requestEntity = HttpEntity<Void>(headers)
 
         return try {
-            val response: ResponseEntity<Array<IssueSummary>> = restTemplate.exchange(
-                uri,
-                HttpMethod.GET,
-                requestEntity,
-                Array<IssueSummary>::class.java
-            )
-            val list = response.body?.toList().orEmpty()
-            list.map { issue ->
-                issue.copy(url = if (!issue.idReadable.isNullOrBlank()) baseUrl.removeSuffix("/") + "/issue/" + issue.idReadable else null)
-            }
+            val response = restTemplate.exchange(uri, HttpMethod.GET, requestEntity, IssueSummary::class.java)
+            response.body?.copy(url = "$baseUrl/issue/$issueId")
+        } catch (ex: HttpClientErrorException.NotFound) {
+            null
         } catch (ex: HttpClientErrorException.Unauthorized) {
             throw UnauthorizedToYouTrackException("Unauthorized to YouTrack. Check your API token.")
         } catch (ex: HttpClientErrorException.Forbidden) {
-            throw UnauthorizedToYouTrackException("Forbidden by YouTrack. Your token may lack the required permissions.")
+            throw UnauthorizedToYouTrackException("Forbidden by YouTrack. Token may lack permissions.")
         }
     }
 }
 
-class UnauthorizedToYouTrackException(message: String): RuntimeException(message)
+class UnauthorizedToYouTrackException(message: String) : RuntimeException(message)

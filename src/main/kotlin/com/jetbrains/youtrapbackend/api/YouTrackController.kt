@@ -1,25 +1,26 @@
-package com.jetbrains.youtrapbackend.api
+package com.jetbrains.youtrapbackend.youtrack
 
-import com.jetbrains.youtrapbackend.youtrack.UnauthorizedToYouTrackException
-import com.jetbrains.youtrapbackend.youtrack.YouTrackClient
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/youtrack")
 class YouTrackController(
-    private val youTrackClient: YouTrackClient
+    private val youTrackService: YouTrackService
 ) {
     data class ErrorResponse(val message: String)
 
-    @GetMapping("/issues")
-    fun getAllIssues(): ResponseEntity<*> {
+    @GetMapping("/issues/{issueId}/graph")
+    fun getIssueGraph(
+        @PathVariable issueId: String
+    ): ResponseEntity<*> {
         return try {
-            val issues = youTrackClient.getAllIssues()
-            ResponseEntity.ok(issues)
+            val issueGraph = youTrackService.getIssueDependencyGraph(issueId)
+            ResponseEntity.ok(issueGraph)
         } catch (e: IllegalArgumentException) {
             ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message ?: "Invalid request"))
         } catch (e: UnauthorizedToYouTrackException) {
