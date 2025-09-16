@@ -19,6 +19,7 @@ class JwtTokenProvider(
 
     private fun signingKey() = Keys.hmacShaKeyFor(jwtSecret.toByteArray(StandardCharsets.UTF_8))
 
+    // --- UPDATED: generateToken now adds custom claims ---
     fun generateToken(authentication: Authentication): String {
         val userPrincipal = authentication.principal as OAuth2User
         val email = userPrincipal.attributes["email"] as? String ?: "N/A"
@@ -30,7 +31,7 @@ class JwtTokenProvider(
 
         return Jwts.builder()
             .setSubject(email)
-            .claim("name", name)
+            .claim("name", name)    
             .claim("picture", picture)
             .setIssuedAt(now)
             .setExpiration(expiryDate)
