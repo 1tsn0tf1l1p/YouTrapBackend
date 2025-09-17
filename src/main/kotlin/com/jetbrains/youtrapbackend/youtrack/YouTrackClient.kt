@@ -18,14 +18,14 @@ class YouTrackClient(
     private val restTemplate: RestTemplate = RestTemplate()
 
     data class LinkedIssue(val idReadable: String)
-
     data class LinkType(val name: String)
-
     data class IssueLink(
         val direction: String,
         val linkType: LinkType,
         val issues: List<LinkedIssue>
     )
+
+    data class CustomField(val name: String?, val value: Any?)
 
     data class IssueSummary(
         val idReadable: String?,
@@ -34,7 +34,8 @@ class YouTrackClient(
         val created: Long?,
         val updated: Long?,
         val url: String?,
-        val links: List<IssueLink>?
+        val links: List<IssueLink>?,
+        val customFields: List<CustomField>?
     ) {
         data class Project(val name: String?)
     }
@@ -51,7 +52,8 @@ class YouTrackClient(
         }
 
         val fields = "idReadable,summary,project(name),created,updated," +
-                "links(direction,linkType(name),issues(idReadable))"
+                "links(direction,linkType(name),issues(idReadable))," +
+                "customFields(name,value(name))"
 
         val uri = UriComponentsBuilder
             .fromHttpUrl("$baseUrl/api/issues/$issueId")
@@ -83,14 +85,14 @@ class YouTrackClient(
             "YouTrack base URL and API token must be configured."
         }
 
-        val fields = "idReadable,summary,project(name),created,updated"
+        val fields = "idReadable,summary,project(name),created,updated,customFields(name,value(name))"
         val query = "project: {$projectName}"
 
         val uri = UriComponentsBuilder
             .fromHttpUrl("$baseUrl/api/issues")
             .queryParam("fields", fields)
             .queryParam("query", query)
-            .queryParam("\$top", -1)
+            .queryParam("\$top", 100)
             .build()
             .toUri()
 

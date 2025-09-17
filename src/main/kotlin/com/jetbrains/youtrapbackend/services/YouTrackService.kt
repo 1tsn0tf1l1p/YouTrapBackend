@@ -1,5 +1,6 @@
 package com.jetbrains.youtrapbackend.services
 
+import com.jetbrains.youtrapbackend.api.dto.IssueDetailsResponse
 import com.jetbrains.youtrapbackend.youtrack.YouTrackClient
 import org.springframework.stereotype.Service
 import java.util.*
@@ -8,14 +9,7 @@ import java.util.*
 class YouTrackService(
     private val youTrackClient: YouTrackClient
 ) {
-    /**
-     * Fetches an issue and recursively traverses its "Depends on" and "Is required for" links
-     * to build a complete graph of all related issues.
-     *
-     * @param startIssueId The ID of the issue to start the traversal from (e.g., "BE-4").
-     * @return A list of all unique issues found in the dependency graph.
-     */
-    fun getIssueDependencyGraph(startIssueId: String): List<YouTrackClient.IssueSummary> {
+    fun getIssueDependencyGraph(startIssueId: String): List<IssueDetailsResponse> {
         val issuesToVisit: Queue<String> = LinkedList()
         val visitedIssueIds = mutableSetOf<String>()
         val allIssuesFound = mutableMapOf<String, YouTrackClient.IssueSummary>()
@@ -27,27 +21,52 @@ class YouTrackService(
             val currentIssueId = issuesToVisit.poll()
             val issueDetails = youTrackClient.getIssueDetails(currentIssueId) ?: continue
 
-            allIssuesFound[currentIssueId] = issueDetails
+            val dependencyLinks = issueDetails.links?.filter { link ->
+                link.linkType.name == "Depend" && link.issues.isNotEmpty()
+            }
+            val cleanedIssueDetails = issueDetails.copy(links = dependencyLinks)
 
-            issueDetails.links?.forEach { link ->
-                if (link.linkType.name == "Depend") {
-                    link.issues.forEach { linkedIssue ->
-                        if (!visitedIssueIds.contains(linkedIssue.idReadable)) {
-                            visitedIssueIds.add(linkedIssue.idReadable)
-                            issuesToVisit.add(linkedIssue.idReadable)
-                        }
+            allIssuesFound[currentIssueId] = cleanedIssueDetails
+
+            cleanedIssueDetails.links?.forEach { link ->
+                link.issues.forEach { linkedIssue ->
+                    if (!visitedIssueIds.contains(linkedIssue.idReadable)) {
+                        visitedIssueIds.add(linkedIssue.idReadable)
+                        issuesToVisit.add(linkedIssue.idReadable)
                     }
                 }
             }
         }
-        return allIssuesFound.values.toList()
+        return allIssuesFound.values.map { it.toCleanResponse() }
     }
 
-    fun getIssuesForProject(projectName: String): List<YouTrackClient.IssueSummary> {
-        return youTrackClient.getIssuesForProject(projectName)
+    fun getIssuesForProject(projectName: String): List<IssueDetailsResponse> {
+        val rawIssues = youTrackClient.getIssuesForProject(projectName)
+        return rawIssues.map { it.toCleanResponse() }
     }
 
     fun getAllProjects(): List<YouTrackClient.YouTrackProject> {
         return youTrackClient.getProjects()
+    }
+
+    private fun YouTrackClient.IssueSummary.toCleanResponse(): IssueDetailsResponse {
+        val stateField = this.customFields?.find { it.name == "State" }
+
+        val stateName = when (val value = stateField?.value) {
+            is Map<*, *> -> value["name"] as? String
+            is List<*> -> (value.firstOrNull() as? Map<*, *>)?.get("name") as? String
+            else -> null
+        }
+
+        return IssueDetailsResponse(
+            idReadable = this.idReadable,
+            summary = this.summary,
+            project = this.project,
+            created = this.created,
+            updated = this.updated,
+            url = this.url,
+            links = this.links,
+            state = stateName
+        )
     }
 }
