@@ -21,18 +21,15 @@ class YouTrackService(
             val currentIssueId = issuesToVisit.poll()
             val issueDetails = youTrackClient.getIssueDetails(currentIssueId) ?: continue
 
-            val dependencyLinks = issueDetails.links?.filter { link ->
-                link.linkType.name == "Depend" && link.issues.isNotEmpty()
-            }
-            val cleanedIssueDetails = issueDetails.copy(links = dependencyLinks)
+            allIssuesFound[currentIssueId] = issueDetails
 
-            allIssuesFound[currentIssueId] = cleanedIssueDetails
-
-            cleanedIssueDetails.links?.forEach { link ->
-                link.issues.forEach { linkedIssue ->
-                    if (!visitedIssueIds.contains(linkedIssue.idReadable)) {
-                        visitedIssueIds.add(linkedIssue.idReadable)
-                        issuesToVisit.add(linkedIssue.idReadable)
+            issueDetails.links?.forEach { link ->
+                if (link.linkType.name == "Depend") {
+                    link.issues.forEach { linkedIssue ->
+                        if (!visitedIssueIds.contains(linkedIssue.idReadable)) {
+                            visitedIssueIds.add(linkedIssue.idReadable)
+                            issuesToVisit.add(linkedIssue.idReadable)
+                        }
                     }
                 }
             }
