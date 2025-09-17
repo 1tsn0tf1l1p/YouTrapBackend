@@ -85,7 +85,9 @@ class YouTrackClient(
             "YouTrack base URL and API token must be configured."
         }
 
-        val fields = "idReadable,summary,project(name),created,updated,customFields(name,value(name))"
+        val fields = "idReadable,summary,project(name),created,updated," +
+                "links(direction,linkType(name),issues(idReadable))," +
+                "customFields(name,value(name))"
         val query = "project: {$projectName}"
 
         val uri = UriComponentsBuilder
