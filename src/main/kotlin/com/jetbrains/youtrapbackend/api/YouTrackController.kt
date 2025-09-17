@@ -1,5 +1,8 @@
-package com.jetbrains.youtrapbackend.youtrack
+package com.jetbrains.youtrapbackend.api
 
+import com.jetbrains.youtrapbackend.api.dto.ErrorResponse
+import com.jetbrains.youtrapbackend.services.YouTrackService
+import com.jetbrains.youtrapbackend.youtrack.UnauthorizedToYouTrackException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -12,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController
 class YouTrackController(
     private val youTrackService: YouTrackService
 ) {
-    data class ErrorResponse(val message: String)
 
     @GetMapping("/issues/{issueId}/graph")
     fun getIssueGraph(

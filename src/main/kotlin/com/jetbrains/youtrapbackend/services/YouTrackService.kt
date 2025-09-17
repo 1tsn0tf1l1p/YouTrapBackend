@@ -1,8 +1,8 @@
-package com.jetbrains.youtrapbackend.youtrack
+package com.jetbrains.youtrapbackend.services
 
+import com.jetbrains.youtrapbackend.youtrack.YouTrackClient
 import org.springframework.stereotype.Service
-import java.util.LinkedList
-import java.util.Queue
+import java.util.*
 
 @Service
 class YouTrackService(
