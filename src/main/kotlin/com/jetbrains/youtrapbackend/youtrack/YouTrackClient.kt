@@ -39,6 +39,12 @@ class YouTrackClient(
         data class Project(val name: String?)
     }
 
+    data class YouTrackProject(
+        val id: String?,
+        val name: String?,
+        val shortName: String?
+    )
+
     fun getIssueDetails(issueId: String): IssueSummary? {
         require(baseUrl.isNotBlank() && apiToken.isNotBlank()) {
             "YouTrack base URL and API token must be configured."
@@ -78,7 +84,6 @@ class YouTrackClient(
         }
 
         val fields = "idReadable,summary,project(name),created,updated"
-
         val query = "project: {$projectName}"
 
         val uri = UriComponentsBuilder
@@ -105,6 +110,37 @@ class YouTrackClient(
             throw UnauthorizedToYouTrackException("Unauthorized to YouTrack. Check your API token.")
         } catch (ex: HttpClientErrorException.Forbidden) {
             throw UnauthorizedToYouTrackException("Forbidden by YouTrack. Token may lack permissions.")
+        }
+    }
+
+    fun getProjects(): List<YouTrackProject> {
+        require(baseUrl.isNotBlank() && apiToken.isNotBlank()) {
+            "YouTrack base URL and API token must be configured."
+        }
+
+        val fields = "id,name,shortName"
+
+        val uri = UriComponentsBuilder
+            .fromHttpUrl("$baseUrl/api/admin/projects")
+            .queryParam("fields", fields)
+            .queryParam("\$top", -1)
+            .build()
+            .toUri()
+
+        val headers = HttpHeaders().apply {
+            accept = listOf(MediaType.APPLICATION_JSON)
+            set(HttpHeaders.AUTHORIZATION, "Bearer $apiToken")
+        }
+
+        val requestEntity = HttpEntity<Void>(headers)
+
+        return try {
+            val response = restTemplate.exchange(uri, HttpMethod.GET, requestEntity, Array<YouTrackProject>::class.java)
+            response.body?.toList() ?: emptyList()
+        } catch (ex: HttpClientErrorException.Unauthorized) {
+            throw UnauthorizedToYouTrackException("Unauthorized to YouTrack. Check your API token.")
+        } catch (ex: HttpClientErrorException.Forbidden) {
+            throw UnauthorizedToYouTrackException("Forbidden by YouTrack. Token may lack permissions to read projects.")
         }
     }
 }

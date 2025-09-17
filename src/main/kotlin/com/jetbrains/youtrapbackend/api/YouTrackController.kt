@@ -41,4 +41,16 @@ class YouTrackController(
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ErrorResponse(e.message ?: "Unauthorized"))
         }
     }
+
+    @GetMapping("/projects")
+    fun getProjects(): ResponseEntity<*> {
+        return try {
+            val projects = youTrackService.getAllProjects()
+            ResponseEntity.ok(projects)
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message ?: "Invalid request"))
+        } catch (e: UnauthorizedToYouTrackException) {
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ErrorResponse(e.message ?: "Unauthorized"))
+        }
+    }
 }
