@@ -1,6 +1,6 @@
 package com.jetbrains.youtrapbackend.config
 
-import com.jetbrains.youtrapbackend.security.JwtAuthenticationFilter
+import com.jetbrains.youtrapbackend.common.security.JwtAuthenticationFilter
 import com.jetbrains.youtrapbackend.security.OAuth2AuthenticationSuccessHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -44,7 +44,12 @@ class SecurityConfig(
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
         configuration.allowedOrigins =
-            listOf("https://youtrapbackend.onrender.com", "http://localhost:8080", "http://localhost:3000", "http://172.16.132.82:8080")
+            listOf(
+                "https://youtrapbackend.onrender.com",
+                "http://localhost:8080",
+                "http://localhost:3000",
+                "http://172.16.132.82:8080"
+            )
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("Authorization", "Content-Type")
         configuration.allowCredentials = true

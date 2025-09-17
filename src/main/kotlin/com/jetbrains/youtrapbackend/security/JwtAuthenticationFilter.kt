@@ -1,5 +1,7 @@
-package com.jetbrains.youtrapbackend.security
+package com.jetbrains.youtrapbackend.common.security
 
+import com.jetbrains.youtrapbackend.security.JwtTokenProvider
+import com.jetbrains.youtrapbackend.security.UserPrincipal
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
