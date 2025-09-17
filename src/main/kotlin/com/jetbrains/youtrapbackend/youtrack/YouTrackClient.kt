@@ -71,6 +71,42 @@ class YouTrackClient(
             throw UnauthorizedToYouTrackException("Forbidden by YouTrack. Token may lack permissions.")
         }
     }
+
+    fun getIssuesForProject(projectName: String): List<IssueSummary> {
+        require(baseUrl.isNotBlank() && apiToken.isNotBlank()) {
+            "YouTrack base URL and API token must be configured."
+        }
+
+        val fields = "idReadable,summary,project(name),created,updated"
+
+        val query = "project: {$projectName}"
+
+        val uri = UriComponentsBuilder
+            .fromHttpUrl("$baseUrl/api/issues")
+            .queryParam("fields", fields)
+            .queryParam("query", query)
+            .queryParam("\$top", -1)
+            .build()
+            .toUri()
+
+        val headers = HttpHeaders().apply {
+            accept = listOf(MediaType.APPLICATION_JSON)
+            set(HttpHeaders.AUTHORIZATION, "Bearer $apiToken")
+        }
+
+        val requestEntity = HttpEntity<Void>(headers)
+
+        return try {
+            val response = restTemplate.exchange(uri, HttpMethod.GET, requestEntity, Array<IssueSummary>::class.java)
+            response.body?.map { it.copy(url = "$baseUrl/issue/${it.idReadable}") } ?: emptyList()
+        } catch (ex: HttpClientErrorException.NotFound) {
+            emptyList()
+        } catch (ex: HttpClientErrorException.Unauthorized) {
+            throw UnauthorizedToYouTrackException("Unauthorized to YouTrack. Check your API token.")
+        } catch (ex: HttpClientErrorException.Forbidden) {
+            throw UnauthorizedToYouTrackException("Forbidden by YouTrack. Token may lack permissions.")
+        }
+    }
 }
 
 class UnauthorizedToYouTrackException(message: String) : RuntimeException(message)

@@ -42,4 +42,8 @@ class YouTrackService(
         }
         return allIssuesFound.values.toList()
     }
+
+    fun getIssuesForProject(projectName: String): List<YouTrackClient.IssueSummary> {
+        return youTrackClient.getIssuesForProject(projectName)
+    }
 }
