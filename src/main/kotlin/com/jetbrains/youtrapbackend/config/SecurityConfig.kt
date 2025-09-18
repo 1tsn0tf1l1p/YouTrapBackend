@@ -50,6 +50,7 @@ class SecurityConfig(
                 "http://localhost:3000",
                 "http://172.16.132.82:8080",
                 "http://localhost:8081",
+                "https://you-trap.vercel.app"
             )
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("Authorization", "Content-Type")
