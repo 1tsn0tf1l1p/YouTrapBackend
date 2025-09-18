@@ -48,7 +48,8 @@ class SecurityConfig(
                 "https://youtrapbackend.onrender.com",
                 "http://localhost:8080",
                 "http://localhost:3000",
-                "http://172.16.132.82:8080"
+                "http://172.16.132.82:8080",
+                "https://you-trap.vercel.app"
             )
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("Authorization", "Content-Type")
