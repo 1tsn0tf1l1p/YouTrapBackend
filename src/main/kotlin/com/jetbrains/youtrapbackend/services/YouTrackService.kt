@@ -12,11 +12,13 @@ class YouTrackService(
 ) {
     fun getIssueDependencyGraph(startIssueId: String): List<IssueDetailsResponse> {
         val allIssuesInGraph = fetchFullGraph(startIssueId)
-
         val responseCache = mutableMapOf<String, IssueDetailsResponse>()
 
-        return allIssuesInGraph.values.map { issueSummary ->
-            buildRecursiveResponse(issueSummary, allIssuesInGraph, responseCache)
+        val startIssue = allIssuesInGraph[startIssueId]
+        return if (startIssue != null) {
+            listOf(buildRecursiveResponse(startIssue, allIssuesInGraph, responseCache))
+        } else {
+            emptyList()
         }
     }
 
@@ -35,12 +37,10 @@ class YouTrackService(
             allIssuesFound[currentIssueId] = issueDetails
 
             issueDetails.links?.forEach { link ->
-                if (link.linkType.name == "Depend") {
-                    link.issues.forEach { linkedIssue ->
-                        if (!visitedIssueIds.contains(linkedIssue.idReadable)) {
-                            visitedIssueIds.add(linkedIssue.idReadable)
-                            issuesToVisit.add(linkedIssue.idReadable)
-                        }
+                link.issues.forEach { linkedIssue ->
+                    if (!visitedIssueIds.contains(linkedIssue.idReadable)) {
+                        visitedIssueIds.add(linkedIssue.idReadable)
+                        issuesToVisit.add(linkedIssue.idReadable)
                     }
                 }
             }
